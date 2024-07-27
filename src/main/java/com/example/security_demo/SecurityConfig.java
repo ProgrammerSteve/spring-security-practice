@@ -2,6 +2,7 @@ package com.example.security_demo;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -15,10 +16,14 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated());
+        http.authorizeHttpRequests((requests) ->
+                requests
+                        .requestMatchers("/h2-console/**").permitAll()
+                        .anyRequest().authenticated());
         http.sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         //http.formLogin(withDefaults());
 
@@ -29,7 +34,9 @@ public class SecurityConfig {
         //where YWRtaW46dGVzdDEyMw== is username:password encoded into base64
         //can use basic auth in the authorization tab of postman to attach the authorization header
         http.httpBasic(withDefaults());
-
+        http.headers(headers->
+                headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
+        http.csrf(csrf->csrf.disable());
         return http.build();
     }
 
