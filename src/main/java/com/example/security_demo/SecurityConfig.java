@@ -3,6 +3,7 @@ package com.example.security_demo;
 import com.example.security_demo.jwt.AuthEntryPointJwt;
 import com.example.security_demo.jwt.AuthTokenFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -62,9 +63,8 @@ public class SecurityConfig {
 //        return http.build();
 //    }
 
-
     @Bean
-    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http.authorizeHttpRequests(authorizeRequests -> authorizeRequests
              //we want to permit all endpoints that goes into h2-console
@@ -95,24 +95,27 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(){
-        UserDetails user1= User.withUsername("user1")
-                .password(passwordEncoder().encode("test123")) //{noop} prefix tells spring password should be saved as plain text
-                .roles("USER")
-                .build();
-        UserDetails admin= User.withUsername("admin")
-                .password(passwordEncoder().encode("test123")) //{noop} prefix tells spring password should be saved as plain text
-                .roles("ADMIN")
-                .build();
+    public CommandLineRunner initData(UserDetailsService userDetailsService) {
+        return args -> {
+            JdbcUserDetailsManager manager = (JdbcUserDetailsManager) userDetailsService;
+            UserDetails userOne = User.withUsername("user")
+                    .password(passwordEncoder().encode("test123"))
+                    .roles("USER")
+                    .build();
 
-        JdbcUserDetailsManager userDetailsManager=new JdbcUserDetailsManager(dataSource);
-        userDetailsManager.createUser(user1);
-        userDetailsManager.createUser(admin);
-        return userDetailsManager;
+            UserDetails admin = User.withUsername("admin")
+                    .password(passwordEncoder().encode("test123"))
+                    .roles("ADMIN")
+                    .build();
 
-        //In-memory authentication
-        //return new InMemoryUserDetailsManager(user1,admin);
+            JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
+            jdbcUserDetailsManager.createUser(userOne);
+            jdbcUserDetailsManager.createUser(admin);
+        };
     }
+
+    @Bean
+    public UserDetailsService userDetailsService(){ return new JdbcUserDetailsManager(dataSource);}
 
     @Bean
     public PasswordEncoder passwordEncoder(){
